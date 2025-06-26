@@ -1,108 +1,154 @@
-import com.jme3.app.SimpleApplication;
-import com.jme3.input.KeyInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.light.DirectionalLight;
-import com.jme3.math.ColorRGBA;
-import com.jme3.math.Vector3f;
-import com.jme3.scene.Spatial;
-import com.jme3.terrain.geomipmap.TerrainQuad;
-import com.jme3.terrain.heightmap.AbstractHeightMap;
-import com.jme3.terrain.heightmap.ImageBasedHeightMap;
-import com.jme3.texture.Texture;
-import com.jme3.texture.Texture.WrapMode;
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.*;
 
-public class Main extends SimpleApplication implements ActionListener {
+class ColoredGradeReportGUI extends JFrame {
 
-    private Spatial bike;
-    private TerrainQuad terrain;
-    private boolean isMovingForward = false;
-    private boolean isMovingBackward = false;
-    private boolean isTurningLeft = false;
-    private boolean isTurningRight = false;
+    private JComboBox<String> courseBox, semesterBox;
+    private JButton generateBtn, exportPdfBtn, exportCsvBtn, closeBtn;
+    private JTable gradeTable;
+
+    public ColoredGradeReportGUI() {
+        // بنیادی فریم سیٹنگز
+        setTitle("Instructor - Generate Student Grades Report");
+        setSize(800, 500);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+
+        // رنگوں کی تعریف (آپ اپنی مرضی کے مطابق بدل سکتے ہیں)
+        Color backgroundColor = new Color(30, 40, 70);         // گہرا نیلا
+        Color panelColor      = new Color(45, 60, 100);        // معمولی نیلا
+        Color buttonColor     = new Color(100, 150, 240);      // ہلکا نیلا
+        Color buttonTextColor = Color.WHITE;                   // سفید ٹیکسٹ برائے بٹن
+        Color headerColor     = new Color(20, 25, 50);         // ٹیبل ہیڈر کے لیے بہت گہرا نیلا
+        Color headerTextColor = Color.WHITE;                   // ہیڈر میں سفید ٹیکسٹ
+        Color rowAltColor     = new Color(235, 235, 255);      // ٹیبل کی متبادل قطار کے لیے ہلکا نیلا
+
+        // فریم کا بیک گراؤنڈ
+        getContentPane().setBackground(backgroundColor);
+
+        // ----- Top Panel (کنٹرولز) -----
+        JPanel topPanel = new JPanel(new GridLayout(2, 3, 10, 10));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        topPanel.setBackground(panelColor);
+
+        // لیبلز اور ڈراپ ڈاؤنز
+        JLabel courseLabel = new JLabel("Select Course:");
+        courseLabel.setForeground(Color.WHITE);
+        topPanel.add(courseLabel);
+
+        courseBox = new JComboBox<>(new String[]{"BSc CS 101", "BSc Math 202", "Intro to Java"});
+        courseBox.setBackground(Color.WHITE);
+        courseBox.setForeground(Color.BLACK);
+        topPanel.add(courseBox);
+
+        JLabel semesterLabel = new JLabel("Select Semester:");
+        semesterLabel.setForeground(Color.WHITE);
+        topPanel.add(semesterLabel);
+
+        semesterBox = new JComboBox<>(new String[]{"Spring 2025", "Fall 2025"});
+        semesterBox.setBackground(Color.WHITE);
+        semesterBox.setForeground(Color.BLACK);
+        topPanel.add(semesterBox);
+
+        // Generate Report بٹن
+        generateBtn = new JButton("Generate Report");
+        generateBtn.setBackground(buttonColor);
+        generateBtn.setForeground(buttonTextColor);
+        generateBtn.setFocusPainted(false);
+        topPanel.add(generateBtn);
+
+        // Close بٹن
+        closeBtn = new JButton("Close");
+        closeBtn.setBackground(buttonColor);
+        closeBtn.setForeground(buttonTextColor);
+        closeBtn.setFocusPainted(false);
+        topPanel.add(closeBtn);
+
+        add(topPanel, BorderLayout.NORTH);
+
+        // ----- Table (ڈسپلے ایریا) -----
+        gradeTable = new JTable();
+        JScrollPane scrollPane = new JScrollPane(gradeTable);
+        scrollPane.getViewport().setBackground(Color.WHITE); // اگر خالی جگہ ہے تو یہ سفید رہے
+
+        // ٹیبل ہیڈر کا کلر سیٹ کرنا
+        gradeTable.getTableHeader().setBackground(headerColor);
+        gradeTable.getTableHeader().setForeground(headerTextColor);
+        gradeTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 14));
+
+        // ٹیبل کی متبادل قطاروں کے لیے Renderer
+        gradeTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(
+                    JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int col) {
+
+                Component c = super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, row, col);
+
+                if (!isSelected) {
+                    if (row % 2 == 0) {
+                        c.setBackground(Color.WHITE);
+                    } else {
+                        c.setBackground(rowAltColor);
+                    }
+                    c.setForeground(Color.BLACK);
+                }
+                return c;
+            }
+        });
+
+        add(scrollPane, BorderLayout.CENTER);
+
+        // ----- Bottom Panel
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setBackground(panelColor);
+
+        exportPdfBtn = new JButton("Export as PDF");
+        exportPdfBtn.setBackground(buttonColor);
+        exportPdfBtn.setForeground(buttonTextColor);
+        exportPdfBtn.setFocusPainted(false);
+        bottomPanel.add(exportPdfBtn);
+
+        exportCsvBtn = new JButton("Export as CSV");
+        exportCsvBtn.setBackground(buttonColor);
+        exportCsvBtn.setForeground(buttonTextColor);
+        exportCsvBtn.setFocusPainted(false);
+        bottomPanel.add(exportCsvBtn);
+
+        add(bottomPanel, BorderLayout.SOUTH);
+
+        // ----- Action Listeners -----
+        generateBtn.addActionListener(e -> generateReport());
+        closeBtn.addActionListener(e -> dispose());
+
+        setVisible(true);
+    }
+
+    private void generateReport() {
+
+        String[] columns = {"Student ID", "Student Name", "Grade"};
+        Object[][] data = {
+                {"1001", "Ali Khan", "A"},
+                {"1002", "Sara Iqbal", "B+"},
+                {"1003", "Zain Ahmed", "A-"},
+                {"1004", "Nida Malik", "B"},
+                {"1005", "Hamza Raza", "C+"}
+        };
+
+        DefaultTableModel model = new DefaultTableModel(data, columns);
+        gradeTable.setModel(model);
+
+        gradeTable.getTableHeader().setBackground(new Color(20, 25, 50));
+        gradeTable.getTableHeader().setForeground(Color.WHITE);
+        gradeTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 14));
+    }
 
     public static void main(String[] args) {
-        Main app = new Main();
-        app.start();
-    }
-
-    @Override
-    public void simpleInitApp() {
-        // Set up camera
-        flyCam.setMoveSpeed(50);
-        cam.setLocation(new Vector3f(0, 10, 20));
-        cam.lookAt(Vector3f.ZERO, Vector3f.UNIT_Y);
-
-        // Add light
-        DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.5f, -0.5f, -0.5f));
-        sun.setColor(ColorRGBA.White);
-        rootNode.addLight(sun);
-
-        // Load bike model
-        bike = assetManager.loadModel("Models/bike.obj");
-        bike.scale(0.1f);
-        bike.setLocalTranslation(0, 1, 0);
-        rootNode.attachChild(bike);
-
-        // Create terrain
-        createTerrain();
-
-        // Set up input mappings
-        inputManager.addMapping("Forward", new KeyTrigger(KeyInput.KEY_W));
-        inputManager.addMapping("Backward", new KeyTrigger(KeyInput.KEY_S));
-        inputManager.addMapping("Left", new KeyTrigger(KeyInput.KEY_A));
-        inputManager.addMapping("Right", new KeyTrigger(KeyInput.KEY_D));
-        inputManager.addListener(this, "Forward", "Backward", "Left", "Right");
-    }
-
-    private void createTerrain() {
-        // Load height map
-        Texture heightMapImage = assetManager.loadTexture("Textures/heightmap.png");
-        AbstractHeightMap heightmap = new ImageBasedHeightMap(heightMapImage.getImage());
-        heightmap.load();
-
-        // Create terrain
-        terrain = new TerrainQuad("terrain", 65, 513, heightmap.getHeightMap());
-        Texture grass = assetManager.loadTexture("Textures/grass.jpg");
-        grass.setWrap(WrapMode.Repeat);
-        terrain.setMaterial(assetManager.loadMaterial("Materials/Terrain.j3m"));
-        terrain.setLocalScale(1, 1, 1);
-        terrain.setLocalTranslation(0, 0, 0);
-        rootNode.attachChild(terrain);
-    }
-
-    @Override
-    public void onAction(String binding, boolean isPressed, float tpf) {
-        if (binding.equals("Forward")) {
-            isMovingForward = isPressed;
-        } else if (binding.equals("Backward")) {
-            isMovingBackward = isPressed;
-        } else if (binding.equals("Left")) {
-            isTurningLeft = isPressed;
-        } else if (binding.equals("Right")) {
-            isTurningRight = isPressed;
-        }
-    }
-
-    @Override
-    public void simpleUpdate(float tpf) {
-        // Handle bike movement
-        if (isMovingForward) {
-            bike.move(bike.getLocalRotation().getRotationColumn(2).mult(-0.1f));
-        }
-        if (isMovingBackward) {
-            bike.move(bike.getLocalRotation().getRotationColumn(2).mult(0.1f));
-        }
-        if (isTurningLeft) {
-            bike.rotate(0, 0.05f, 0);
-        }
-        if (isTurningRight) {
-            bike.rotate(0, -0.05f, 0);
-        }
-
-        // Ensure bike stays on terrain
-        float height = terrain.getHeight(bike.getLocalTranslation());
-        bike.setLocalTranslation(bike.getLocalTranslation().x, height + 1, bike.getLocalTranslation().z);
+        SwingUtilities.invokeLater(ColoredGradeReportGUI::new);
     }
 }
